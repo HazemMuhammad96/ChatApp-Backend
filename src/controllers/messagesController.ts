@@ -23,8 +23,23 @@ export async function getChats(req: MyRequest, res: Response, next: NextFunction
 
 
     try {
-        const chat = await Chat.find({ recipients: req.body.username }).select("recipients -_id").sort({ updatedAt: -1 })
-        res.send(chat)
+        // 
+        const chat = await Chat.find({ recipients: req.body.username }).select("recipients messages seen -_id").slice("messages", -1)
+            .sort({ updatedAt: -1 })
+
+        const send = chat.map(element => {
+
+            const lastMessage = element.messages[0]
+
+            return {
+                recipients: element.recipients.filter(val => val != req.body.username),
+                last: lastMessage,
+                // seen2: element.seen,
+                seen: element.seen.filter(val => val.recipient == req.body.username)[0].lastSeen
+            }
+        })
+
+        res.send(send)
     }
     catch (e) {
         console.log(e)

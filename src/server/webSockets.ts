@@ -27,14 +27,20 @@ function manageMessaging(id, socket) {
 
     socket.on(`sendMessage`, async ({ to, message }) => {
 
-
         try {
-            const searchChat = await Chat.findOne({ recipients: [...to, id].sort() })
+            const recipientsArr = [...to, id].sort()
+            const searchChat = await Chat.findOne({ recipients: recipientsArr })
 
             if (!searchChat) {
 
+                const seen = []
+                recipientsArr.forEach(rec => {
+                    seen.push({ recipient: rec, lastSeen: true })
+                })
+
                 const newChat = new Chat({
-                    recipients: [...to, id].sort()
+                    recipients: [...to, id].sort(),
+                    seen
                 })
                 const savedChat = await newChat.save()
 
@@ -46,7 +52,13 @@ function manageMessaging(id, socket) {
                 await Chat.updateOne({ recipients: [...to, id].sort() },
                     { $push: { messages: messageObject } })
 
+                to.forEach(async (currentRec) => {
+                    await Chat.updateOne({ recipients: [...to, id].sort(), "seen.recipient": currentRec },
+                        { $set: { "seen.$.lastSeen": false } })
+                });
+
                 socket.emit(`RecieveMessage-${to.sort()}`, messageObject)
+                socket.emit(`RecieveNotification`, { chatId: to.sort(), last: messageObject, seen: true })
 
                 to.forEach((rec) => {
                     const send = to.filter((val) => val != rec)
@@ -56,6 +68,7 @@ function manageMessaging(id, socket) {
 
                     console.log(`sent from ${id} to ${send.sort()}`)
                     socket.broadcast.to(rec).emit(`RecieveMessage-${send.sort()}`, messageObject)
+                    socket.broadcast.to(rec).emit(`RecieveNotification`, { chatId: send.sort(), last: messageObject, seen: false })
 
                 })
 
@@ -111,6 +124,10 @@ export default function initSocketIO(server) {
         manageMessaging(id, socket)
         manageIsTyping(id, socket)
 
+        socket.on("seenIndecator", async ({ to, lastSeen }) => {
+            await Chat.updateOne({ recipients: [...to, id].sort(), "seen.recipient": id },
+                { $set: { "seen.$.lastSeen": true } })
+        })
     })
 
 }

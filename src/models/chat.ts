@@ -3,6 +3,7 @@ import mongoose, { Model, Document, ObjectId } from "mongoose"
 interface IChat extends Document {
     recipients: Array<any>
     messages: Array<{ from: ObjectId, text: any, sentAt: Date }>
+    seen: Array<{recipient: string, lastSeen: boolean}>
 }
 
 const Schema = mongoose.Schema
@@ -14,6 +15,9 @@ const chatSchema = new Schema(
             required: true
         },
         messages: {
+            type: []
+        },
+        seen: {
             type: []
         }
     }, { timestamps: true }

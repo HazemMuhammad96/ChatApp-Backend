@@ -17,7 +17,6 @@ import initSocketIO from "./server/webSockets"
 
 
 
-// PORT = 4000
 
 //Constants
 const port = process.env.PORT
@@ -35,9 +34,6 @@ mongoose.connect(mongoURI || "",
 
 server.listen(port, () => console.log(`Server is running on port ${port} secret is ${process.env.ACCESS_TOKEN_SECRET}`));
 
-// const server2 = http.createServer(app)
-// // initSocketIO(server2)
-// server2.listen(+port + 2, () => console.log(`Server is running on port ${+port + 2}`));
 
 //Middlewares
 app.use(bodyParser.urlencoded())
